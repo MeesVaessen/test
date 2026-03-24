@@ -46,7 +46,6 @@ func handler(buf *timod.Buffer, quit chan bool) {
 				if req.Name != nil && *req.Name == "import_schema" {
 
 					// 1. Read your schema.ti file using the embed.FS package
-					// (Assuming you embedded it alongside your frontend files)
 					schemaBytes, err := frontendFiles.ReadFile("schema.ti")
 					if err != nil {
 						timod.WriteEx(pkg.Pid, timod.ExOperation, "Failed to read schema.ti from binary")
@@ -60,17 +59,19 @@ func handler(buf *timod.Buffer, quit chan bool) {
 						continue
 					}
 
-					// 3. Execute the schema code against the collection that called the module
-					// req.Scope automatically contains the scope (e.g., "//my_collection")
-					_, err = conn.Query(req.Scope, schemaCode, nil)
-					if err != nil {
-						timod.WriteEx(pkg.Pid, timod.ExOperation, fmt.Sprintf("Schema import failed: %v", err))
-						continue
-					}
-
-					// 4. Send a successful response back to the user
-					resData, _ := msgpack.Marshal("Schema imported successfully!")
+					// 3. FIX THE DEADLOCK: Send a response back to ThingsDB FIRST to unlock the scope!
+					resData, _ := msgpack.Marshal("Schema import started in the background!")
 					timod.WriteResponseRaw(pkg.Pid, resData)
+
+					// 4. Execute the schema code in a background Goroutine so it doesn't block the module
+					go func(targetScope string, code string) {
+						_, err := conn.Query(targetScope, code, nil)
+						if err != nil {
+							log.Printf("Schema import failed: %v", err)
+						} else {
+							log.Printf("Schema imported successfully in %s!", targetScope)
+						}
+					}(req.Scope, schemaCode)
 
 				} else {
 					// Handle unknown procedures
