@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "main": {
+    "linux/amd64": "bin/flow_engine_linux_amd64.bin"
+  },
+  "includes": [
+    "bin/frontend",
+    "schema.ti"
+  ],
+  "exposes": {
+    "import_schema": {
+      "doc": "Imports the flow engine types and procedures into the active collection."
+    }
+  }
+}
