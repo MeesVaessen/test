@@ -6,12 +6,36 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/thingsdb/go-timod"
 )
 
 //go:embed bin/frontend/*
 var frontendFiles embed.FS
+
+type spaHandler struct {
+	staticFS http.FileSystem
+}
+
+func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/")
+	if path == "" {
+		path = "."
+	}
+	f, err := h.staticFS.Open(path)
+	if err != nil {
+		r.URL.Path = "/"
+	} else {
+		err := f.Close()
+		if err != nil {
+			return
+		}
+	}
+
+	// Hand the request off to the standard Go FileServer
+	http.FileServer(h.staticFS).ServeHTTP(w, r)
+}
 
 func handler(buf *timod.Buffer, quit chan bool) {
 	for {
@@ -41,10 +65,10 @@ func startUIServer() {
 		log.Fatal("Failed to load embedded dist folder: ", err)
 	}
 
-	http.Handle("/", http.FileServer(http.FS(distFolder)))
+	http.Handle("/", spaHandler{staticFS: http.FS(distFolder)})
 
-	fmt.Println("Front-end UI running at http://localhost:8181")
-	if err := http.ListenAndServe(":8181", nil); err != nil {
+	fmt.Println("Front-end UI running at http://localhost:8182")
+	if err := http.ListenAndServe(":8182", nil); err != nil {
 		log.Fatal("Web server failed: ", err)
 	}
 }
