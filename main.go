@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	timod "github.com/thingsdb/go-timod"
+	"github.com/thingsdb/go-timod"
 )
 
 //go:embed bin/frontend/*
@@ -17,7 +17,7 @@ func handler(buf *timod.Buffer, quit chan bool) {
 	for {
 		select {
 		case pkg := <-buf.PkgCh:
-			switch timod.Proto(pkg.Tp) {
+			switch pkg.Tp {
 			case timod.ProtoModuleConf:
 				timod.WriteConfOk()
 
