@@ -67,8 +67,8 @@ func startUIServer() {
 
 	http.Handle("/", spaHandler{staticFS: http.FS(distFolder)})
 
-	fmt.Println("Front-end UI running at http://localhost:8182")
-	if err := http.ListenAndServe(":8182", nil); err != nil {
+	fmt.Println("Front-end UI running at http://localhost:8181")
+	if err := http.ListenAndServe(":8181", nil); err != nil {
 		log.Fatal("Web server failed: ", err)
 	}
 }
